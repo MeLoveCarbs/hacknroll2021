@@ -26,150 +26,153 @@ class OrderDetails:
 TID_OID = {}
 OID_DETAILS = {}
 
-LOGIN_STATE, CHOOSE_ROLE_STATE, CUSTOMER_CHOOSE_CANTEEN_STATE, CUSTOMER_CONFIRM_ORDER_STATE, CUSTOMER_DECK_MENU_STATE, \
-CUSTOMER_FINEFOOD_MENU_STATE, CUSTOMER_FLAVOUR_MENU_STATE, CUSTOMER_PUSH_ORDER_STATE, CUSTOMER_USER_LOCATION_STATE, CUSTOMER_WAIT_STATE, \
-DELIVERER_COMPLETE_ORDER_STATE, DELIVERER_SHOW_ORDER_STATE = range(12)
+LOGIN_STATE, CHOOSE_ROLE_STATE, CUSTOMER_CHOOSE_CANTEEN_STATE, CUSTOMER_CONFIRM_ORDER_STATE, \
+CUSTOMER_PUSH_ORDER_STATE, CUSTOMER_USER_LOCATION_STATE, \
+DELIVERER_COMPLETE_ORDER_STATE, DELIVERER_SHOW_ORDER_STATE, DELIVERER_DELIVERED_STATE = range(9)
 
 def start(update, context):
-    keyboard = [['3', '4', '5', '6']]
+    username = update.message.chat.username
+    startMessage = "Hi, " + username + ". Welcome to nusmakan_bot"
+    # put logo pic
+    update.message.reply_text(startMessage) 
+    keyboard = [['login']]
     reply_markup = ReplyKeyboardMarkup(keyboard,
                                        one_time_keyboard=True,
                                        resize_keyboard=True)
-    message = "Welcome to nusmakan_bot"
-    update.message.reply_text(message, reply_markup=reply_markup) 
+    loginMessage = "Please login to your NUSNET account"
+    chat_id = update.message.chat_id
+    update.message.reply_text(loginMessage, reply_markup=reply_markup)
     return LOGIN_STATE
 
 def login(update, context):
-    keyboard = [['3', '4', '5', '6']]
+    # do login stuff
+
+    keyboard = [['customer', 'deliverer']]
     reply_markup = ReplyKeyboardMarkup(keyboard,
                                        one_time_keyboard=True,
                                        resize_keyboard=True)
-    message = "login state"
-    update.message.reply_text(message, reply_markup=reply_markup) 
+    message = "Are you a customer or a deliverer"
+    chat_id = update.message.chat_id
+    context.bot.send_message(chat_id=chat_id, text=message, reply_markup=reply_markup)
     return CHOOSE_ROLE_STATE
 
 def chooseRole(update, context):
-    keyboard = [['3', '4', '5', '6']]
-    reply_markup = ReplyKeyboardMarkup(keyboard,
-                                       one_time_keyboard=True,
-                                       resize_keyboard=True)
-    message = "choose role state"
-    update.message.reply_text(message, reply_markup=reply_markup) 
-    if customer :
+    USER_REPLY = update.message.text
+    print(USER_REPLY)
+    keyboard_location = [['location']]
+    reply_markup_location = ReplyKeyboardMarkup(keyboard_location,
+                                               one_time_keyboard=True,
+                                               resize_keyboard=True)
+
+    keyboard_show_orders = [['showorders']]
+    reply_markup_show_orders = ReplyKeyboardMarkup(keyboard_show_orders,
+                                            one_time_keyboard=True,
+                                            resize_keyboard=True)
+    chat_id = update.message.chat_id
+    if USER_REPLY == "customer":
+        context.bot.send_message(
+            chat_id=chat_id, text="Please input your location", reply_markup=reply_markup_location)
         return CUSTOMER_USER_LOCATION_STATE
-    else:
+    elif USER_REPLY == "deliverer":
+        context.bot.send_message(
+            chat_id=chat_id, text="Here are the orders", reply_markup=reply_markup_show_orders)
         return DELIVERER_SHOW_ORDER_STATE
+    else: 
+        return LOGIN_STATE
 
 def userLocation(update, context):
-    keyboard = [['3', '4', '5', '6']]
+    # get user location
+    keyboard = [['finefoods' , 'flavours', 'thedeck']]
     reply_markup = ReplyKeyboardMarkup(keyboard,
                                        one_time_keyboard=True,
                                        resize_keyboard=True)
-    message = "choose location state"
-    update.message.reply_text(message, reply_markup=reply_markup) 
-
+    message = "Which food court do you wish to order from"
+    chat_id = update.message.chat_id
+    context.bot.send_message(chat_id=chat_id, text=message, reply_markup=reply_markup)
     return CUSTOMER_CHOOSE_CANTEEN_STATE
 
 def chooseCanteen(update, context):
-    keyboard = [['3', '4', '5', '6']]
+    CANTEEN = update.message.text
+    chat_id = update.message.chat_id
+    message = "Choose your food to order"
+    keyboard = [['confirmorder']]
     reply_markup = ReplyKeyboardMarkup(keyboard,
                                        one_time_keyboard=True,
                                        resize_keyboard=True)
-    message = "choose canteen state"
-    update.message.reply_text(message, reply_markup=reply_markup) 
-    
-    if fineFood:
-        return CUSTOMER_FINEFOOD_MENU_STATE
-    elif deck:
-        return CUSTOMER_DECK_MENU_STATE
-    elif flavour:
-        return CUSTOMER_FLAVOUR_MENU_STATE
-
-def finefoodMenu(update, context):
-    keyboard = [['3', '4', '5', '6']]
-    reply_markup = ReplyKeyboardMarkup(keyboard,
-                                       one_time_keyboard=True,
-                                       resize_keyboard=True)
-    message = "fine food menu state"
-    update.message.reply_text(message, reply_markup=reply_markup) 
-    return CUSTOMER_CONFIRM_ORDER_STATE
-def flavourMenu(update, context):
-    keyboard = [['3', '4', '5', '6']]
-    reply_markup = ReplyKeyboardMarkup(keyboard,
-                                       one_time_keyboard=True,
-                                       resize_keyboard=True)
-    message = "flavour menu state"
-    update.message.reply_text(message, reply_markup=reply_markup) 
-    return CUSTOMER_CONFIRM_ORDER_STATE
-def deckMenu(update, context):
-    keyboard = [['3', '4', '5', '6']]
-    reply_markup = ReplyKeyboardMarkup(keyboard,
-                                       one_time_keyboard=True,
-                                       resize_keyboard=True)
-    message = "deck menu state"
-    update.message.reply_text(message, reply_markup=reply_markup) 
-    return CUSTOMER_CONFIRM_ORDER_STATE
+    context.bot.send_message(chat_id=chat_id, text=message, reply_markup=reply_markup)
+    if CANTEEN == 'finefoods':
+        # show menu
+        finefoodsMessage = "finefood menu"
+        context.bot.send_message(chat_id=chat_id, text=finefoodsMessage)
+        return CUSTOMER_CONFIRM_ORDER_STATE
+    elif CANTEEN == 'flavours':
+        # show menu
+        flavoursMessage = "flavours menu"
+        context.bot.send_message(chat_id=chat_id, text=flavoursMessage)
+        return CUSTOMER_CONFIRM_ORDER_STATE
+    elif CANTEEN == 'thedeck':
+        # show menu
+        deckMessage = "deck menu"
+        context.bot.send_message(chat_id=chat_id, text=deckMessage, reply_markup=reply_markup)
+        return CUSTOMER_CONFIRM_ORDER_STATE
 
 def confirmOrder(update, context):
-    keyboard = [['3', '4', '5', '6']]
+    keyboard = [['pushorder', 'goback']]
     reply_markup = ReplyKeyboardMarkup(keyboard,
                                        one_time_keyboard=True,
                                        resize_keyboard=True)
-    message = "confirm order state"
+    message = "Push order?"
     update.message.reply_text(message, reply_markup=reply_markup) 
-    if confirm:
-        return CUSTOMER_PUSH_ORDER_STATE
-    else: 
-        return CUSTOMER_CHOOSE_CANTEEN_STATE
+    return CUSTOMER_PUSH_ORDER_STATE
 
 def pushOrder(update, context):
-    keyboard = [['3', '4', '5', '6']]
-    reply_markup = ReplyKeyboardMarkup(keyboard,
+    MESSAGE = update.message.text
+    keyboard_startmenu = [['startmenu']]
+    reply_markup_startmenu = ReplyKeyboardMarkup(keyboard_startmenu,
                                        one_time_keyboard=True,
                                        resize_keyboard=True)
-    message = "push order state"
-    update.message.reply_text(message, reply_markup=reply_markup) 
-    return CUSTOMER_WAIT_STATE
-
-def customerWait(update, context):
-    keyboard = [['3', '4', '5', '6']]
-    reply_markup = ReplyKeyboardMarkup(keyboard,
+    keyboard_foodmenu = [['confirmorder']]
+    reply_markup_foodmenu = ReplyKeyboardMarkup(keyboard_foodmenu,
                                        one_time_keyboard=True,
                                        resize_keyboard=True)
-    message = "customer wait state"
-    update.message.reply_text(message, reply_markup=reply_markup) 
-    
-    if orderIsComplete:
-        # prepare a complete message
-        return CHOOSE_ROLE_STATE
-    else:
-        # prepare waiting message
-        return CUSTOMER_WAIT_STATE
+    if MESSAGE == "pushorder":
+        message = "Order pushed, please wait"
+        update.message.reply_text(message, reply_markup=reply_markup_startmenu) 
+        # wait for delivery here
+        return LOGIN_STATE
+    elif MESSAGE == "goback":
+        message = "Choose your food to order"
+        update.message.reply_text(message, reply_markup=reply_markup_foodmenu) 
+        return CUSTOMER_CONFIRM_ORDER_STATE
 
 def showOrder(update, context):
-    keyboard = [['3', '4', '5', '6']]
+    keyboard = [['confirm']]
     reply_markup = ReplyKeyboardMarkup(keyboard,
                                        one_time_keyboard=True,
                                        resize_keyboard=True)
-    message = "show order state"
+    message = "Confirm to deliver these?"
     update.message.reply_text(message, reply_markup=reply_markup) 
-
-    if acceptOrder:
-        return DELIVERER_COMPLETE_ORDER_STATE
-    else:
-        return DELIVERER_SHOW_ORDER_STATE
+    return DELIVERER_COMPLETE_ORDER_STATE
 
 def completeOrder(update, context):
-    keyboard = [['3', '4', '5', '6']]
+    keyboard = [['delivered']]
     reply_markup = ReplyKeyboardMarkup(keyboard,
                                        one_time_keyboard=True,
                                        resize_keyboard=True)
-    message = "complete order state"
+    message = "Delivered?"
     update.message.reply_text(message, reply_markup=reply_markup) 
-    if deliveryGuyPressOkay:
-        #modify order details
-        return CHOOSE_ROLE_STATE
+    return DELIVERER_DELIVERED_STATE
 
+def deliveredOrder(update, context):
+    MESSAGE = update.message.text
+    keyboard = [['startmenu']]
+    reply_markup = ReplyKeyboardMarkup(keyboard,
+                                       one_time_keyboard=True,
+                                       resize_keyboard=True)
+    if MESSAGE == 'delivered':
+        chat_id = update.message.chat_id
+        context.bot.send_message(chat_id=chat_id, text="Weee! Your customer is grateful for the food", reply_markup=reply_markup)
+        return LOGIN_STATE
 
 def error(update, context):
     """Log Errors caused by Updates."""
@@ -200,29 +203,23 @@ def main():
         entry_points=[CommandHandler('start', start)],
 
         states={
-            LOGIN_STATE: [CommandHandler('login', login)],
+            LOGIN_STATE: [MessageHandler(Filters.regex('login|startmenu'), login)],
 
-            CHOOSE_ROLE_STATE: [CommandHandler('chooseRole', chooseRole)],
+            CHOOSE_ROLE_STATE: [MessageHandler(Filters.regex('customer|deliverer'), chooseRole)],
 
-            CUSTOMER_USER_LOCATION_STATE: [CommandHandler('userLocation', userLocation)],
+            CUSTOMER_USER_LOCATION_STATE: [MessageHandler(Filters.regex('location'), userLocation)],
 
-            CUSTOMER_CHOOSE_CANTEEN_STATE: [CommandHandler('chooseCanteen', chooseCanteen)],
+            CUSTOMER_CHOOSE_CANTEEN_STATE: [MessageHandler(Filters.regex('finefoods|flavours|thedeck|goback'), chooseCanteen)],
 
-            CUSTOMER_DECK_MENU_STATE: [CommandHandler('deckMenu', deckMenu)],
+            CUSTOMER_CONFIRM_ORDER_STATE: [MessageHandler(Filters.regex('confirmorder'), confirmOrder)],
 
-            CUSTOMER_FINEFOOD_MENU_STATE: [CommandHandler('finefoodMenu', finefoodMenu)],
+            CUSTOMER_PUSH_ORDER_STATE: [MessageHandler(Filters.regex('pushorder|goback'), pushOrder)],
 
-            CUSTOMER_FLAVOUR_MENU_STATE: [CommandHandler('flavourMenu', flavourMenu)],
+            DELIVERER_SHOW_ORDER_STATE: [MessageHandler(Filters.regex('showorders'), showOrder)],
 
-            CUSTOMER_CONFIRM_ORDER_STATE: [CommandHandler('confirmOrder', confirmOrder)],
+            DELIVERER_COMPLETE_ORDER_STATE: [MessageHandler(Filters.regex('confirm'), completeOrder)],
 
-            CUSTOMER_PUSH_ORDER_STATE: [CommandHandler('pushOrder', pushOrder)],
-
-            CUSTOMER_WAIT_STATE: [CommandHandler('wait', customerWait)],
-
-            DELIVERER_SHOW_ORDER_STATE: [CommandHandler('showOrder', showOrder)],
-
-            DELIVERER_COMPLETE_ORDER_STATE: [CommandHandler('completeOrder', completeOrder)],
+            DELIVERER_DELIVERED_STATE: [MessageHandler(Filters.regex('delivered'), deliveredOrder)],
         },
 
         fallbacks=[CommandHandler('Cancel', cancel)],
@@ -239,9 +236,10 @@ def main():
 
     # Run the bot until the user presses Ctrl-C or the process
     # receives SIGINT, SIGTERM or SIGABRT:
-    # updater.idle()
+    updater.idle()
 
 if __name__ == '__main__':
     dotenv_path = join(dirname(__file__), '.env')
     load_dotenv(dotenv_path) 
+    print("RUNNING NOW")
     main()
