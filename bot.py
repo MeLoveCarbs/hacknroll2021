@@ -114,7 +114,7 @@ def main():
     handler for the interaction with the user.
     """
     # Create the EventHandler and pass it your bot's token.
-    myToken = os.getenv('TOKEN')
+    myToken = os.environ.get("TOKEN") 
     updater = Updater(token='', use_context=True)
 
     # Get the dispatcher to register handlers:
