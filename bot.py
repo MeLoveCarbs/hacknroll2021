@@ -2,6 +2,7 @@ from telegram.ext import Updater, CommandHandler, MessageHandler, RegexHandler
 from telegram.ext import ConversationHandler, CallbackQueryHandler, Filters, CallbackContext
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, Location
 from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, KeyboardButton
+from time import sleep
 from dotenv import load_dotenv
 
 import logging
@@ -18,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 
 class OrderDetails:
-    def __init__(self, orderTime, foodQuantity, foodPrice, restaurant, deliveryFee, orderId, deliveryLocation):
+    def __init__(self, orderTime=None, foodQuantity=None, foodPrice=None, restaurant=None, deliveryFee=None, orderId=None, deliveryLocation=None):
         self.orderTime = orderTime
         self.foodQuantity = foodQuantity
         self.foodPrice = foodPrice
@@ -32,10 +33,7 @@ class OrderDetails:
 TID_OID = {}
 OID_DETAILS = {}
 
-LOGIN_STATE, CHOOSE_STATE, CUSTOMER_CHOOSE_CANTEEN_STATE, CUSTOMER_CONFIRM_ORDER_STATE, \
-    CUSTOMER_PUSH_ORDER_STATE, CUSTOMER_USER_LOCATION_STATE, \
-    DELIVERER_COMPLETE_ORDER_STATE, DELIVERER_SHOW_ORDER_STATE, DELIVERER_DELIVERED_STATE = range(
-        9)
+LOGIN_STATE, CUSTOMER_STATE, DELIVERER_STATE = range(3)
 
 
 def start(update: Update, context: CallbackContext) -> None:
@@ -68,31 +66,7 @@ def login(update: Update, context: CallbackContext) -> None:
     message = "Are you a customer or a deliverer"
     query.edit_message_text(text=message, reply_markup=reply_markup)
 
-    return CHOOSE_STATE
-
-# def chooseRole(update, context):
-#     USER_REPLY = update.message.text
-#     print(USER_REPLY)
-#     keyboard_location = [['location']]
-#     reply_markup_location = ReplyKeyboardMarkup(keyboard_location,
-#                                                one_time_keyboard=True,
-#                                                resize_keyboard=True)
-
-#     keyboard_show_orders = [['showorders']]
-#     reply_markup_show_orders = ReplyKeyboardMarkup(keyboard_show_orders,
-#                                             one_time_keyboard=True,
-#                                             resize_keyboard=True)
-#     chat_id = update.message.chat_id
-#     if USER_REPLY == "customer":
-#         context.bot.send_message(
-#             chat_id=chat_id, text="Please input your location", reply_markup=reply_markup_location)
-#         return CUSTOMER_USER_LOCATION_STATE
-#     elif USER_REPLY == "deliverer":
-#         context.bot.send_message(
-#             chat_id=chat_id, text="Here are the orders", reply_markup=reply_markup_show_orders)
-#         return DELIVERER_SHOW_ORDER_STATE
-#     else:
-#         return LOGIN_STATE
+    return CUSTOMER_STATE
 
 
 def userLocation(update: Update, context: CallbackContext) -> int:
@@ -112,10 +86,9 @@ def userLocation(update: Update, context: CallbackContext) -> int:
                                        one_time_keyboard=True,
                                        resize_keyboard=True)
 
-    msg = context.bot.send_message(
+    context.bot.send_message(
         chat_id, text=message, reply_markup=reply_markup)
-
-    return CHOOSE_STATE
+    return CUSTOMER_STATE
 
 
 def locationCallback(update: Update, context: CallbackContext) -> int:
@@ -141,7 +114,7 @@ def locationCallback(update: Update, context: CallbackContext) -> int:
     context.bot.send_message(
         chat_id, text=message, reply_markup=reply_markup)
 
-    return CHOOSE_STATE
+    return CUSTOMER_STATE
 
 
 def chooseCanteen(update, context):
@@ -163,24 +136,96 @@ def chooseCanteen(update, context):
                                         resize_keyboard=True)
     message = "Which food court do you wish to order from"
     context.bot.send_message(chat_id, text=message, reply_markup=reply_markup)
-
-    return CHOOSE_STATE
+    return CUSTOMER_STATE
 
 
 def finefoods(update, context):
     query = update.callback_query
     query.answer()
-    # @Jun Hao populate this keyboard with nice emojis and real food/pricing
-    keyboard = [[InlineKeyboardButton("A $1.50", callback_data='confirmOrder1.50'),
-                 InlineKeyboardButton(
-        "B $2.00", callback_data='confirmOrder2.00'),
-        InlineKeyboardButton("C $3.00", callback_data='confirmOrder3.00')]]
+    keyboard = [[
+        InlineKeyboardButton("Gong Cha Pearl Milk Tea $3.50",
+                             callback_data='confirmOrder3.50'),
+        InlineKeyboardButton("Shanghai Xiao Long Bao $4.50",
+                             callback_data='confirmOrder4.50'),
+        InlineKeyboardButton("Korean BBQ Beef Set $5.00",
+                             callback_data='confirmOrder5.00'),
+    ]]
     reply_markup = InlineKeyboardMarkup(keyboard,
                                         one_time_keyboard=True,
                                         resize_keyboard=True)
     message = "What food?"
     query.edit_message_text(text=message, reply_markup=reply_markup)
-    return CHOOSE_STATE
+    return CUSTOMER_STATE
+
+
+def flavours(update, context):
+    query = update.callback_query
+    query.answer()
+    keyboard = [[
+        InlineKeyboardButton(
+            "Roti John $4.50", callback_data='confirmOrder4.50'),
+        InlineKeyboardButton("Taiwanese Chicken Chop Rice $5.00",
+                             callback_data='confirmOrder5.00'),
+        InlineKeyboardButton("Mala Hotpot $6.50",
+                             callback_data='confirmOrder6.50'),
+    ]]
+    reply_markup = InlineKeyboardMarkup(keyboard,
+                                        one_time_keyboard=True,
+                                        resize_keyboard=True)
+    message = "What food?"
+    query.edit_message_text(text=message, reply_markup=reply_markup)
+    return CUSTOMER_STATE
+
+
+def thedeck(update, context):
+    query = update.callback_query
+    query.answer()
+    keyboard = [[
+        InlineKeyboardButton("Chicken Rice $3.00",
+                             callback_data='confirmOrder3.00'),
+        InlineKeyboardButton("Yong Tau Foo $3.00",
+                             callback_data='confirmOrder3.00'),
+        InlineKeyboardButton("Japanese Chicken Cutlet Set $4.00",
+                             callback_data='confirmOrder4.00'),
+    ]]
+    reply_markup = InlineKeyboardMarkup(keyboard,
+                                        one_time_keyboard=True,
+                                        resize_keyboard=True)
+    message = "What food?"
+    query.edit_message_text(text=message, reply_markup=reply_markup)
+    return CUSTOMER_STATE
+
+
+def flavours(update, context):
+    query = update.callback_query
+    query.answer()
+    # @Jun Hao populate this keyboard with nice emojis and real food/pricing
+    keyboard = [[InlineKeyboardButton("A $1.50", callback_data='confirmOrder1.50'),
+                 InlineKeyboardButton(
+                     "B $2.00", callback_data='confirmOrder2.00'),
+                 InlineKeyboardButton("C $3.00", callback_data='confirmOrder3.00')]]
+    reply_markup = InlineKeyboardMarkup(keyboard,
+                                        one_time_keyboard=True,
+                                        resize_keyboard=True)
+    message = "What food?"
+    query.edit_message_text(text=message, reply_markup=reply_markup)
+    return CUSTOMER_STATE
+
+
+def thedeck(update, context):
+    query = update.callback_query
+    query.answer()
+    # @Jun Hao populate this keyboard with nice emojis and real food/pricing
+    keyboard = [[InlineKeyboardButton("A $1.50", callback_data='confirmOrder1.50'),
+                 InlineKeyboardButton(
+                     "B $2.00", callback_data='confirmOrder2.00'),
+                 InlineKeyboardButton("C $3.00", callback_data='confirmOrder3.00')]]
+    reply_markup = InlineKeyboardMarkup(keyboard,
+                                        one_time_keyboard=True,
+                                        resize_keyboard=True)
+    message = "What food?"
+    query.edit_message_text(text=message, reply_markup=reply_markup)
+    return CUSTOMER_STATE
 
 
 def confirmOrder(update, context):
@@ -189,72 +234,75 @@ def confirmOrder(update, context):
     foodCost = float(query.data[12:])
     deliveryCost = random.uniform(0.5, 1.9)
     totalCost = foodCost + deliveryCost
-    print("meow")
-    print(query.data)
 
     keyboard = [[InlineKeyboardButton("Yes", callback_data='pushOrder'), InlineKeyboardButton(
         "No", callback_data='chooseCanteen')]]
     reply_markup = InlineKeyboardMarkup(keyboard,
                                         one_time_keyboard=True,
                                         resize_keyboard=True)
-    message = "Food cost: $" + str(foodCost) + "\nDelivery cost: $" + str(
-        deliveryCost) + "\nTotal cost: $" + str(totalCost) + "\nConfirm order?"
+    message = "Food cost: $" + str(round(foodCost, 2)) + "\nDelivery cost: $" + str(
+        round(deliveryCost, 2)) + "\nTotal cost: $" + str(round(totalCost, 2)) + "\nConfirm order?"
     query.edit_message_text(text=message, reply_markup=reply_markup)
-    return CHOOSE_STATE
+    return CUSTOMER_STATE
 
 
 def pushOrder(update, context):
-    MESSAGE = update.message.text
-    keyboard_startmenu = [['startmenu']]
-    reply_markup_startmenu = ReplyKeyboardMarkup(keyboard_startmenu,
-                                                 one_time_keyboard=True,
-                                                 resize_keyboard=True)
-    keyboard_foodmenu = [['confirmorder']]
-    reply_markup_foodmenu = ReplyKeyboardMarkup(keyboard_foodmenu,
-                                                one_time_keyboard=True,
-                                                resize_keyboard=True)
-    if MESSAGE == "pushorder":
-        message = "Order pushed, please wait"
-        update.message.reply_text(message, reply_markup=reply_markup_startmenu)
-        # wait for delivery here
-        return LOGIN_STATE
-    elif MESSAGE == "goback":
-        message = "Choose your food to order"
-        update.message.reply_text(message, reply_markup=reply_markup_foodmenu)
-        return CUSTOMER_CONFIRM_ORDER_STATE
+    query = update.callback_query
+    query.answer()
+    keyboard = [[InlineKeyboardButton("Start Menu", callback_data='login')]]
+    reply_markup = InlineKeyboardMarkup(keyboard,
+                                        one_time_keyboard=True,
+                                        resize_keyboard=True)
+    message = "Order pushed, please wait"
+    query.edit_message_text(text=message)
+    sleep(2)
+    # found a deliverer algo
+    message = "Your order has been picked up by a deliverer!"
+    query.edit_message_text(text=message)
+    sleep(2)
+    # food delivered algo
+    message = "Your order has been delivered!"
+    query.edit_message_text(text=message, reply_markup=reply_markup)
+    return LOGIN_STATE
 
 
 def showOrder(update, context):
-    keyboard = [['confirm']]
-    reply_markup = ReplyKeyboardMarkup(keyboard,
-                                       one_time_keyboard=True,
-                                       resize_keyboard=True)
-    message = "Confirm to deliver these?"
-    update.message.reply_text(message, reply_markup=reply_markup)
-    return DELIVERER_COMPLETE_ORDER_STATE
+    query = update.callback_query
+    query.answer()
+    keyboard = [[InlineKeyboardButton(
+        "Confirm orders", callback_data='completeOrder')]]
+    reply_markup = InlineKeyboardMarkup(keyboard,
+                                        one_time_keyboard=True,
+                                        resize_keyboard=True)
+    # text box with selection
+    message = "These are the orders waiting to be picked up: \n"
+    query.edit_message_text(text=message, reply_markup=reply_markup)
+    return DELIVERER_STATE
 
 
 def completeOrder(update, context):
-    keyboard = [['delivered']]
-    reply_markup = ReplyKeyboardMarkup(keyboard,
-                                       one_time_keyboard=True,
-                                       resize_keyboard=True)
-    message = "Delivered?"
-    update.message.reply_text(message, reply_markup=reply_markup)
-    return DELIVERER_DELIVERED_STATE
+    query = update.callback_query
+    query.answer()
+    keyboard = [[InlineKeyboardButton(
+        "I have delivered", callback_data='deliveredOrder')]]
+    reply_markup = InlineKeyboardMarkup(keyboard,
+                                        one_time_keyboard=True,
+                                        resize_keyboard=True)
+    message = "Have you delivered?"
+    query.edit_message_text(text=message, reply_markup=reply_markup)
+    return DELIVERER_STATE
 
 
 def deliveredOrder(update, context):
-    MESSAGE = update.message.text
-    keyboard = [['startmenu']]
-    reply_markup = ReplyKeyboardMarkup(keyboard,
-                                       one_time_keyboard=True,
-                                       resize_keyboard=True)
-    if MESSAGE == 'delivered':
-        chat_id = update.message.chat_id
-        context.bot.send_message(
-            chat_id=chat_id, text="Weee! Your customer is grateful for the food", reply_markup=reply_markup)
-        return LOGIN_STATE
+    query = update.callback_query
+    query.answer()
+    keyboard = [[InlineKeyboardButton("Start Menu", callback_data='login')]]
+    reply_markup = InlineKeyboardMarkup(keyboard,
+                                        one_time_keyboard=True,
+                                        resize_keyboard=True)
+    message = "Weee! Your customer is grateful for the food!"
+    query.edit_message_text(text=message, reply_markup=reply_markup)
+    return LOGIN_STATE
 
 
 def error(update, context):
@@ -264,9 +312,17 @@ def error(update, context):
 
 def cancel(update, context):
     user = update.message.from_user
+    chat_id = update.message.chat_id
     logger.info("User %s canceled the conversation.", user.first_name)
-    update.message.reply_text('Bye! /start to begin again',
-                              reply_markup=ReplyKeyboardRemove())
+    context.bot.send_message(chat_id=chat_id, text="See you next time!")
+    return ConversationHandler.END
+
+
+def bye(update, context):
+    chat_id = update.message.chat_id
+    context.bot.send_message(
+        chat_id, text="See you again soon! Type /start to order again 😃")
+    return LOGIN_STATE
 
 
 def main(dev_token=False):
@@ -281,7 +337,7 @@ def main(dev_token=False):
     if dev_token:
         token = os.getenv('DEV_TOKEN')
     else:
-        token = "1519714958:AAEoXv4mFqM2wXkCVNDOnXUh_IH8Sgr6tG4"
+        token = os.getenv('TOKEN')
     updater = Updater(token=token, use_context=True)
 
     # Get the dispatcher to register handlers:
@@ -292,24 +348,27 @@ def main(dev_token=False):
         entry_points=[CommandHandler('start', start)],
 
         states={
-            LOGIN_STATE: [CallbackQueryHandler(login, pattern='login|startmenu')],
+            LOGIN_STATE: [CallbackQueryHandler(login, pattern='login')],
 
-            CHOOSE_STATE: [CallbackQueryHandler(userLocation, pattern='userLocation'), CallbackQueryHandler(showOrder, pattern='showOrder'), CallbackQueryHandler(chooseCanteen, pattern='chooseCanteen'), CallbackQueryHandler(userLocation, pattern='userLocation'), CallbackQueryHandler(finefoods, pattern='finefoods'), CallbackQueryHandler(confirmOrder, pattern='confirmOrder')],
+            CUSTOMER_STATE: [
+                CallbackQueryHandler(userLocation, pattern='userLocation'),
+                CallbackQueryHandler(chooseCanteen, pattern='chooseCanteen'),
+                CallbackQueryHandler(finefoods, pattern='finefoods'),
+                CallbackQueryHandler(flavours, pattern='flavours'),
+                CallbackQueryHandler(thedeck, pattern='thedeck'),
+                CallbackQueryHandler(confirmOrder, pattern='confirmOrder'),
+                CallbackQueryHandler(pushOrder, pattern='pushOrder'),
+                CallbackQueryHandler(showOrder, pattern='showOrder'),
+            ],
 
-            CUSTOMER_CHOOSE_CANTEEN_STATE: [MessageHandler(Filters.regex('finefoods|flavours|thedeck|goback'), chooseCanteen)],
-
-            CUSTOMER_CONFIRM_ORDER_STATE: [MessageHandler(Filters.regex('confirmorder'), confirmOrder)],
-
-            CUSTOMER_PUSH_ORDER_STATE: [MessageHandler(Filters.regex('pushorder|goback'), pushOrder)],
-
-            DELIVERER_SHOW_ORDER_STATE: [MessageHandler(Filters.regex('showorders'), showOrder)],
-
-            DELIVERER_COMPLETE_ORDER_STATE: [MessageHandler(Filters.regex('confirm'), completeOrder)],
-
-            DELIVERER_DELIVERED_STATE: [MessageHandler(Filters.regex('delivered'), deliveredOrder)],
+            DELIVERER_STATE: [
+                CallbackQueryHandler(showOrder, pattern='showOrders'),
+                CallbackQueryHandler(completeOrder, pattern='completeOrder'),
+                CallbackQueryHandler(deliveredOrder, pattern='deliveredOrder'),
+            ]
         },
 
-        fallbacks=[CommandHandler('Cancel', cancel)],
+        fallbacks=[CommandHandler('Cancel', bye)],
         per_user=False,
         allow_reentry=True
     )
