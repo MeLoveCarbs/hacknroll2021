@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 class OrderDetails:
-    def __init__(self, orderTime, foodQuantity, foodPrice, restaurant, deliveryFee, orderId, deliveryLocation):
+    def __init__(self, orderTime=None, foodQuantity=None, foodPrice=None, restaurant=None, deliveryFee=None, orderId=None, deliveryLocation=None):
         self.orderTime = orderTime
         self.foodQuantity = foodQuantity
         self.foodPrice = foodPrice
@@ -112,11 +112,41 @@ def chooseCanteen(update, context):
 def finefoods(update, context):
     query = update.callback_query
     query.answer()
-    # @Jun Hao populate this keyboard with nice emojis and real food/pricing
-    keyboard = [[InlineKeyboardButton("A $1.50", callback_data='confirmOrder1.50'),
-                 InlineKeyboardButton(
-                     "B $2.00", callback_data='confirmOrder2.00'),
-                 InlineKeyboardButton("C $3.00", callback_data='confirmOrder3.00')]]
+    keyboard = [[ 
+        InlineKeyboardButton("Gong Cha Pearl Milk Tea $3.50", callback_data='confirmOrder3.50'),
+        InlineKeyboardButton("Shanghai Xiao Long Bao $4.50", callback_data='confirmOrder4.50'), 
+        InlineKeyboardButton("Korean BBQ Beef Set $5.00", callback_data='confirmOrder5.00'), 
+    ]]
+    reply_markup = InlineKeyboardMarkup(keyboard,
+                                       one_time_keyboard=True,
+                                       resize_keyboard=True)
+    message = "What food?"
+    query.edit_message_text(text=message, reply_markup=reply_markup)
+    return CHOOSE_STATE
+
+def flavours(update, context):
+    query = update.callback_query
+    query.answer()
+    keyboard = [[ 
+        InlineKeyboardButton("Roti John $4.50", callback_data='confirmOrder4.50'),
+        InlineKeyboardButton("Taiwanese Chicken Chop Rice $5.00", callback_data='confirmOrder5.00'), 
+        InlineKeyboardButton("Mala Hotpot $6.50", callback_data='confirmOrder6.50'), 
+    ]]
+    reply_markup = InlineKeyboardMarkup(keyboard,
+                                       one_time_keyboard=True,
+                                       resize_keyboard=True)
+    message = "What food?"
+    query.edit_message_text(text=message, reply_markup=reply_markup)
+    return CHOOSE_STATE
+
+def thedeck(update, context):
+    query = update.callback_query
+    query.answer()
+    keyboard = [[ 
+        InlineKeyboardButton("Chicken Rice $3.00", callback_data='confirmOrder3.00'),
+        InlineKeyboardButton("Yong Tau Foo $3.00", callback_data='confirmOrder3.00'), 
+        InlineKeyboardButton("Japanese Chicken Cutlet Set $4.00", callback_data='confirmOrder4.00'), 
+    ]]
     reply_markup = InlineKeyboardMarkup(keyboard,
                                         one_time_keyboard=True,
                                         resize_keyboard=True)
@@ -161,7 +191,6 @@ def confirmOrder(update, context):
     foodCost = float(query.data[12:])
     deliveryCost = random.uniform(0.5, 1.9)
     totalCost = foodCost + deliveryCost
-    print(query.data)
 
     keyboard = [[InlineKeyboardButton("Yes", callback_data='pushOrder'), InlineKeyboardButton(
         "No", callback_data='chooseCanteen')]]
@@ -242,6 +271,13 @@ def cancel(update, context):
     query.edit_message_text(text="See you next time!")
     return ConversationHandler.END
 
+
+def bye(update, context):
+    query = update.callback_query
+    query.answer()
+    chat_id = query.message.chat.id
+    context.bot.send_message(chat_id, text="Hope to see you again soon! 😃")
+    return LOGIN_STATE
 
 def main():
     """
