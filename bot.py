@@ -35,8 +35,7 @@ def start(update: Update, context: CallbackContext) -> None:
     update.message.reply_text(startMessage) 
     
     chat_id = update.message.chat_id
-    context.bot.send_photo(chat_id, "https://uci.nus.edu.sg/oca/wp-content/uploads/sites/9/2018/05/NUS_Roving_2015-73-Deck-1024x684.jpg")
-    
+    context.bot.send_photo(chat_id, photo=open('public/nusmakan_bot_image.png', 'rb'))
     keyboard = [[ InlineKeyboardButton("Login 😊", callback_data='login')]]
     reply_markup = InlineKeyboardMarkup(keyboard,
                                        one_time_keyboard=True,
