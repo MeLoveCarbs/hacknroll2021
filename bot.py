@@ -196,13 +196,13 @@ def pushOrder(update, context):
 
     message = "Order pushed, please wait"
     query.edit_message_text(text=message)
-    while OID_DETAILS[orderId].isPickUp == False:
-        sleep(2)
+    #while OID_DETAILS[orderId].isPickUp == False:
+    sleep(2)
     # found a deliverer algo
     message  = "Your order has been picked up by a deliverer!"
     query.edit_message_text(text=message)
-    while OID_DETAILS[orderId].isComplete == False:
-        sleep(2)
+    #while OID_DETAILS[orderId].isComplete == False:
+    sleep(2)
     # food delivered algo
     message = "Your order has been delivered!"
     keyboard = [[InlineKeyboardButton("Start Menu", callback_data='login')]]
@@ -215,7 +215,12 @@ def pushOrder(update, context):
 def showOrder(update, context):
     query = update.callback_query
     query.answer()
-    keyboard = [[InlineKeyboardButton("Confirm orders", callback_data='completeOrder')]] 
+    buttons = []
+    for key in OID_DETAILS:
+        if OID_DETAILS[key].isComplete == False:
+            text = "Order " + str(OID_DETAILS[key].restaurant) + " price" + str(OID_DETAILS[key].foodQuantity)
+            buttons.append(InlineKeyboardButton(text, callback_data='completeOrder' + str(key)))
+    keyboard = [buttons] 
     reply_markup = InlineKeyboardMarkup(keyboard,
                                         one_time_keyboard=True,
                                         resize_keyboard=True)
@@ -227,7 +232,11 @@ def showOrder(update, context):
 def completeOrder(update, context):
     query = update.callback_query
     query.answer()
-    keyboard = [[InlineKeyboardButton("I have delivered", callback_data='deliveredOrder')]] 
+
+    key = int(query.data[13:])
+    OID_DETAILS[key].isPickUp = True
+
+    keyboard = [[InlineKeyboardButton("I have delivered", callback_data='deliveredOrder' + str(key))]] 
     reply_markup = InlineKeyboardMarkup(keyboard,
                                         one_time_keyboard=True,
                                         resize_keyboard=True)
@@ -239,6 +248,10 @@ def completeOrder(update, context):
 def deliveredOrder(update, context):
     query = update.callback_query
     query.answer()
+
+    key = int(query.data[14:])
+    OID_DETAILS[key].isComplete = True
+
     keyboard = [[InlineKeyboardButton("Start Menu", callback_data='login')]] 
     reply_markup = InlineKeyboardMarkup(keyboard,
                                         one_time_keyboard=True,
@@ -301,7 +314,6 @@ def main():
             ],
 
             DELIVERER_STATE: [
-                CallbackQueryHandler(showOrder, pattern='showOrders'),
                 CallbackQueryHandler(completeOrder, pattern='completeOrder'),
                 CallbackQueryHandler(deliveredOrder, pattern='deliveredOrder'),
             ]
