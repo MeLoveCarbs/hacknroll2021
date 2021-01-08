@@ -1,16 +1,24 @@
-from telegram.ext import Updater, CommandHandler, MessageHandler, RegexHandler
-from telegram.ext import ConversationHandler, CallbackQueryHandler, Filters
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove
 import os
+import sys
+import logging
+
+from uuid import uuid4
 from os.path import join, dirname
 from dotenv import load_dotenv
-import logging
+from telegram.ext import Updater, CommandHandler, MessageHandler, RegexHandler, CallbackContext
+from telegram.ext import ConversationHandler, CallbackQueryHandler, Filters, InlineQueryHandler
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, InlineQueryResultPhoto, InputTextMessageContent
+from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove
+from telegram import Update, ParseMode
+
+dotenv_path = join(dirname(__file__), '.env')
+load_dotenv(dotenv_path)
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     level=logging.INFO)
 
 logger = logging.getLogger(__name__)
+
 
 class OrderDetails:
     def __init__(self, orderTime, foodQuantity, foodPrice, restaurant, deliveryFee, orderId, deliveryLocation):
@@ -22,19 +30,28 @@ class OrderDetails:
         self.orderId = orderId
         self.deliveryLocation = deliveryLocation
 
+
 # global vars
 TID_OID = {}
 OID_DETAILS = {}
+CANTEEN_IMG_MAP = {
+    'deck': 'https://uci.nus.edu.sg/oca/wp-content/uploads/sites/9/2018/05/NUS_Roving_2015-73-Deck-1024x684.jpg',
+    'flavours': 'https://uci.nus.edu.sg/oca/wp-content/uploads/sites/9/2018/05/Flavours-Edited-1024x684.jpg',
+    'finefoods': 'https://uci.nus.edu.sg/oca/wp-content/uploads/sites/9/2018/05/Fine-Food-1-1024x684.jpg'
+}
 
 LOGIN_STATE, CHOOSE_ROLE_STATE, CUSTOMER_CHOOSE_CANTEEN_STATE, CUSTOMER_CONFIRM_ORDER_STATE, \
-CUSTOMER_PUSH_ORDER_STATE, CUSTOMER_USER_LOCATION_STATE, \
-DELIVERER_COMPLETE_ORDER_STATE, DELIVERER_SHOW_ORDER_STATE, DELIVERER_DELIVERED_STATE = range(9)
+    CUSTOMER_PUSH_ORDER_STATE, CUSTOMER_USER_LOCATION_STATE, \
+    DELIVERER_COMPLETE_ORDER_STATE, DELIVERER_SHOW_ORDER_STATE, DELIVERER_DELIVERED_STATE = range(
+        9)
+
 
 def start(update, context):
     username = update.message.chat.username
     startMessage = "Hi, " + username + ". Welcome to nusmakan_bot"
     # put logo pic
-    update.message.reply_text(startMessage) 
+    logger.info('%s: started order', username)
+    update.message.reply_text(startMessage)
     keyboard = [['login']]
     reply_markup = ReplyKeyboardMarkup(keyboard,
                                        one_time_keyboard=True,
@@ -43,6 +60,7 @@ def start(update, context):
     chat_id = update.message.chat_id
     update.message.reply_text(loginMessage, reply_markup=reply_markup)
     return LOGIN_STATE
+
 
 def login(update, context):
     # do login stuff
@@ -53,21 +71,23 @@ def login(update, context):
                                        resize_keyboard=True)
     message = "Are you a customer or a deliverer"
     chat_id = update.message.chat_id
-    context.bot.send_message(chat_id=chat_id, text=message, reply_markup=reply_markup)
+    context.bot.send_message(
+        chat_id=chat_id, text=message, reply_markup=reply_markup)
     return CHOOSE_ROLE_STATE
+
 
 def chooseRole(update, context):
     USER_REPLY = update.message.text
     print(USER_REPLY)
     keyboard_location = [['location']]
     reply_markup_location = ReplyKeyboardMarkup(keyboard_location,
-                                               one_time_keyboard=True,
-                                               resize_keyboard=True)
+                                                one_time_keyboard=True,
+                                                resize_keyboard=True)
 
     keyboard_show_orders = [['showorders']]
     reply_markup_show_orders = ReplyKeyboardMarkup(keyboard_show_orders,
-                                            one_time_keyboard=True,
-                                            resize_keyboard=True)
+                                                   one_time_keyboard=True,
+                                                   resize_keyboard=True)
     chat_id = update.message.chat_id
     if USER_REPLY == "customer":
         context.bot.send_message(
@@ -77,19 +97,32 @@ def chooseRole(update, context):
         context.bot.send_message(
             chat_id=chat_id, text="Here are the orders", reply_markup=reply_markup_show_orders)
         return DELIVERER_SHOW_ORDER_STATE
-    else: 
+    else:
         return LOGIN_STATE
 
-def userLocation(update, context):
+
+def userLocation(update: Update, context: CallbackContext) -> int:
     # get user location
-    keyboard = [['finefoods' , 'flavours', 'thedeck']]
+    chat_id = update.message.chat_id
+
+    context.bot.send_photo(
+        chat_id=chat_id, photo=CANTEEN_IMG_MAP['finefoods'], caption='Fine Food')
+    context.bot.send_photo(
+        chat_id=chat_id, photo=CANTEEN_IMG_MAP['flavours'], caption='Flavours@UTown')
+    context.bot.send_photo(
+        chat_id=chat_id, photo=CANTEEN_IMG_MAP['deck'], caption='The Deck')
+
+    keyboard = [['finefoods', 'flavours', 'thedeck']]
     reply_markup = ReplyKeyboardMarkup(keyboard,
                                        one_time_keyboard=True,
                                        resize_keyboard=True)
-    message = "Which food court do you wish to order from"
-    chat_id = update.message.chat_id
-    context.bot.send_message(chat_id=chat_id, text=message, reply_markup=reply_markup)
+    message = "Which food court do you wish to order from?"
+
+    context.bot.send_message(
+        chat_id=chat_id, text=message, reply_markup=reply_markup)
+
     return CUSTOMER_CHOOSE_CANTEEN_STATE
+
 
 def chooseCanteen(update, context):
     CANTEEN = update.message.text
@@ -99,7 +132,10 @@ def chooseCanteen(update, context):
     reply_markup = ReplyKeyboardMarkup(keyboard,
                                        one_time_keyboard=True,
                                        resize_keyboard=True)
-    context.bot.send_message(chat_id=chat_id, text=message, reply_markup=reply_markup)
+
+    context.bot.send_message(
+        chat_id=chat_id, text=message, reply_markup=reply_markup)
+
     if CANTEEN == 'finefoods':
         # show menu
         finefoodsMessage = "finefood menu"
@@ -113,8 +149,10 @@ def chooseCanteen(update, context):
     elif CANTEEN == 'thedeck':
         # show menu
         deckMessage = "deck menu"
-        context.bot.send_message(chat_id=chat_id, text=deckMessage, reply_markup=reply_markup)
+        context.bot.send_message(
+            chat_id=chat_id, text=deckMessage, reply_markup=reply_markup)
         return CUSTOMER_CONFIRM_ORDER_STATE
+
 
 def confirmOrder(update, context):
     keyboard = [['pushorder', 'goback']]
@@ -122,28 +160,30 @@ def confirmOrder(update, context):
                                        one_time_keyboard=True,
                                        resize_keyboard=True)
     message = "Push order?"
-    update.message.reply_text(message, reply_markup=reply_markup) 
+    update.message.reply_text(message, reply_markup=reply_markup)
     return CUSTOMER_PUSH_ORDER_STATE
+
 
 def pushOrder(update, context):
     MESSAGE = update.message.text
     keyboard_startmenu = [['startmenu']]
     reply_markup_startmenu = ReplyKeyboardMarkup(keyboard_startmenu,
-                                       one_time_keyboard=True,
-                                       resize_keyboard=True)
+                                                 one_time_keyboard=True,
+                                                 resize_keyboard=True)
     keyboard_foodmenu = [['confirmorder']]
     reply_markup_foodmenu = ReplyKeyboardMarkup(keyboard_foodmenu,
-                                       one_time_keyboard=True,
-                                       resize_keyboard=True)
+                                                one_time_keyboard=True,
+                                                resize_keyboard=True)
     if MESSAGE == "pushorder":
         message = "Order pushed, please wait"
-        update.message.reply_text(message, reply_markup=reply_markup_startmenu) 
+        update.message.reply_text(message, reply_markup=reply_markup_startmenu)
         # wait for delivery here
         return LOGIN_STATE
     elif MESSAGE == "goback":
         message = "Choose your food to order"
-        update.message.reply_text(message, reply_markup=reply_markup_foodmenu) 
+        update.message.reply_text(message, reply_markup=reply_markup_foodmenu)
         return CUSTOMER_CONFIRM_ORDER_STATE
+
 
 def showOrder(update, context):
     keyboard = [['confirm']]
@@ -151,8 +191,9 @@ def showOrder(update, context):
                                        one_time_keyboard=True,
                                        resize_keyboard=True)
     message = "Confirm to deliver these?"
-    update.message.reply_text(message, reply_markup=reply_markup) 
+    update.message.reply_text(message, reply_markup=reply_markup)
     return DELIVERER_COMPLETE_ORDER_STATE
+
 
 def completeOrder(update, context):
     keyboard = [['delivered']]
@@ -160,8 +201,9 @@ def completeOrder(update, context):
                                        one_time_keyboard=True,
                                        resize_keyboard=True)
     message = "Delivered?"
-    update.message.reply_text(message, reply_markup=reply_markup) 
+    update.message.reply_text(message, reply_markup=reply_markup)
     return DELIVERER_DELIVERED_STATE
+
 
 def deliveredOrder(update, context):
     MESSAGE = update.message.text
@@ -171,12 +213,15 @@ def deliveredOrder(update, context):
                                        resize_keyboard=True)
     if MESSAGE == 'delivered':
         chat_id = update.message.chat_id
-        context.bot.send_message(chat_id=chat_id, text="Weee! Your customer is grateful for the food", reply_markup=reply_markup)
+        context.bot.send_message(
+            chat_id=chat_id, text="Weee! Your customer is grateful for the food", reply_markup=reply_markup)
         return LOGIN_STATE
+
 
 def error(update, context):
     """Log Errors caused by Updates."""
     logger.warning('Update "%s" caused error "%s"', update, context.error)
+
 
 def cancel(update, context):
     user = update.message.from_user
@@ -184,7 +229,8 @@ def cancel(update, context):
     update.message.reply_text('Bye! /start to begin again',
                               reply_markup=ReplyKeyboardRemove())
 
-def main():
+
+def main(dev=True):
     """
     Main function.
     This function handles the conversation flow by setting
@@ -192,7 +238,12 @@ def main():
     handler for the interaction with the user.
     """
     # Create the EventHandler and pass it your bot's token.
-    myToken = os.environ.get("TOKEN") 
+    myToken = None
+    if dev:
+        myToken = os.environ.get('DEV_TOKEN')
+    else:
+        myToken = os.environ.get('TOKEN')
+
     updater = Updater(token=myToken, use_context=True)
 
     # Get the dispatcher to register handlers:
@@ -223,7 +274,7 @@ def main():
         },
 
         fallbacks=[CommandHandler('Cancel', cancel)],
-        per_user = False
+        per_user=False
     )
 
     dp.add_handler(conv_handler)
@@ -238,8 +289,9 @@ def main():
     # receives SIGINT, SIGTERM or SIGABRT:
     updater.idle()
 
+
 if __name__ == '__main__':
     dotenv_path = join(dirname(__file__), '.env')
-    load_dotenv(dotenv_path) 
+    load_dotenv(dotenv_path)
     print("RUNNING NOW")
     main()
