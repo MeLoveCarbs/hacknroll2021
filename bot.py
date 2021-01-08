@@ -1,7 +1,7 @@
 from telegram.ext import Updater, CommandHandler, MessageHandler, RegexHandler
 from telegram.ext import ConversationHandler, CallbackQueryHandler, Filters, CallbackContext
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
-from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, Location
+from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, KeyboardButton
 from dotenv import load_dotenv
 
 import logging
@@ -96,25 +96,22 @@ def login(update: Update, context: CallbackContext) -> None:
 
 
 def userLocation(update: Update, context: CallbackContext) -> None:
-    # get user location
     query = update.callback_query
     query.answer()
 
-    # user = update.callback_query.message.from_user
-    # user_location = update.callback_query.message.location
-    # print(user_location)
-
     chat_id = update.callback_query.message.chat.id
     message = "Where do you want the food to be delivered to?"
-    context.bot.send_message(chat_id, text=message)
+    logger.info(query.from_user)
+    logger.info(dir(query))
 
     keyboard = [[InlineKeyboardButton("Yes", callback_data='chooseCanteen'), InlineKeyboardButton(
         "No", callback_data='userLocation')]]
     reply_markup = InlineKeyboardMarkup(keyboard,
                                         one_time_keyboard=True,
                                         resize_keyboard=True)
-    message = "Confirm your location is at SOC Programming Lab 4?"
+
     context.bot.send_message(chat_id, text=message, reply_markup=reply_markup)
+
     return CHOOSE_STATE
 
 
@@ -146,8 +143,8 @@ def finefoods(update, context):
     # @Jun Hao populate this keyboard with nice emojis and real food/pricing
     keyboard = [[InlineKeyboardButton("A $1.50", callback_data='confirmOrder1.50'),
                  InlineKeyboardButton(
-                     "B $2.00", callback_data='confirmOrder2.00'),
-                 InlineKeyboardButton("C $3.00", callback_data='confirmOrder3.00')]]
+        "B $2.00", callback_data='confirmOrder2.00'),
+        InlineKeyboardButton("C $3.00", callback_data='confirmOrder3.00')]]
     reply_markup = InlineKeyboardMarkup(keyboard,
                                         one_time_keyboard=True,
                                         resize_keyboard=True)
@@ -301,4 +298,4 @@ def main(dev_token=False):
 
 if __name__ == '__main__':
     print("RUNNING NOW")
-    main()
+    main(dev_token=True)
