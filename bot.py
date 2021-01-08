@@ -30,7 +30,7 @@ DELIVERER_COMPLETE_ORDER_STATE, DELIVERER_SHOW_ORDER_STATE, DELIVERER_DELIVERED_
 
 def start(update: Update, context: CallbackContext) -> None:
     username = update.message.chat.username
-    startMessage = "Hi, " + username + ". Welcome to nusmakan_bot"
+    startMessage = "Hi, " + str(username) + ". Welcome to nusmakan_bot"
     update.message.reply_text(startMessage) 
     
     chat_id = update.message.chat_id
@@ -119,16 +119,30 @@ def chooseCanteen(update, context):
     context.bot.send_message(chat_id, text=message, reply_markup=reply_markup)
     return CHOOSE_STATE
 
-
-
-def confirmOrder(update, context):
-    keyboard = [['pushorder', 'goback']]
-    reply_markup = ReplyKeyboardMarkup(keyboard,
+def finefoods(update, context):
+    query = update.callback_query
+    query.answer()
+    keyboard = [[ InlineKeyboardButton("A $1.50", callback_data='confirmOrder'), InlineKeyboardButton("B", callback_data='confirmOrder') ]]
+    reply_markup = InlineKeyboardMarkup(keyboard,
                                        one_time_keyboard=True,
                                        resize_keyboard=True)
-    message = "Push order?"
-    update.message.reply_text(message, reply_markup=reply_markup) 
-    return CUSTOMER_PUSH_ORDER_STATE
+    message = "What food?"
+    query.edit_message_text(text=message, reply_markup=reply_markup)
+    return CHOOSE_STATE
+
+def confirmOrder(update, context):
+    query = update.callback_query
+    query.answer()
+    print("meow")
+    print(query.message.text)
+
+    keyboard = [[ InlineKeyboardButton("Yes", callback_data='pushOrder'), InlineKeyboardButton("No", callback_data='chooseCanteen') ]]
+    reply_markup = InlineKeyboardMarkup(keyboard,
+                                       one_time_keyboard=True,
+                                       resize_keyboard=True)
+    message = "Are you sure?"
+    query.edit_message_text(text=message, reply_markup=reply_markup)
+    return CHOOSE_STATE
 
 def pushOrder(update, context):
     MESSAGE = update.message.text
@@ -209,7 +223,7 @@ def main():
         states={
             LOGIN_STATE: [CallbackQueryHandler(login, pattern='login|startmenu')],
 
-            CHOOSE_STATE: [CallbackQueryHandler(userLocation, pattern='userLocation'), CallbackQueryHandler(showOrder, pattern='showOrder'), CallbackQueryHandler(chooseCanteen, pattern='chooseCanteen'), CallbackQueryHandler(userLocation, pattern='userLocation')],
+            CHOOSE_STATE: [CallbackQueryHandler(userLocation, pattern='userLocation'), CallbackQueryHandler(showOrder, pattern='showOrder'), CallbackQueryHandler(chooseCanteen, pattern='chooseCanteen'), CallbackQueryHandler(userLocation, pattern='userLocation'), CallbackQueryHandler(finefoods, pattern='finefoods'), CallbackQueryHandler(confirmOrder, pattern='confirmOrder')],
 
             CUSTOMER_CHOOSE_CANTEEN_STATE: [MessageHandler(Filters.regex('finefoods|flavours|thedeck|goback'), chooseCanteen)],
 
