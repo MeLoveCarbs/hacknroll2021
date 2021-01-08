@@ -1,10 +1,8 @@
 from telegram.ext import Updater, CommandHandler, MessageHandler, RegexHandler
-from telegram.ext import ConversationHandler, CallbackQueryHandler, Filters
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import ConversationHandler, CallbackQueryHandler, Filters, CallbackContext
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove
-import os
-from os.path import join, dirname
-from dotenv import load_dotenv
+
 import logging
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -26,95 +24,102 @@ class OrderDetails:
 TID_OID = {}
 OID_DETAILS = {}
 
-LOGIN_STATE, CHOOSE_ROLE_STATE, CUSTOMER_CHOOSE_CANTEEN_STATE, CUSTOMER_CONFIRM_ORDER_STATE, \
+LOGIN_STATE, CHOOSE_STATE, CUSTOMER_CHOOSE_CANTEEN_STATE, CUSTOMER_CONFIRM_ORDER_STATE, \
 CUSTOMER_PUSH_ORDER_STATE, CUSTOMER_USER_LOCATION_STATE, \
 DELIVERER_COMPLETE_ORDER_STATE, DELIVERER_SHOW_ORDER_STATE, DELIVERER_DELIVERED_STATE = range(9)
 
-def start(update, context):
+def start(update: Update, context: CallbackContext) -> None:
     username = update.message.chat.username
     startMessage = "Hi, " + username + ". Welcome to nusmakan_bot"
-    # put logo pic
     update.message.reply_text(startMessage) 
-    keyboard = [['login']]
-    reply_markup = ReplyKeyboardMarkup(keyboard,
+    
+    chat_id = update.message.chat_id
+    context.bot.send_photo(chat_id, "https://uci.nus.edu.sg/oca/wp-content/uploads/sites/9/2018/05/NUS_Roving_2015-73-Deck-1024x684.jpg")
+    
+    keyboard = [[ InlineKeyboardButton("Login 😊", callback_data='login')]]
+    reply_markup = InlineKeyboardMarkup(keyboard,
                                        one_time_keyboard=True,
                                        resize_keyboard=True)
     loginMessage = "Please login to your NUSNET account"
-    chat_id = update.message.chat_id
     update.message.reply_text(loginMessage, reply_markup=reply_markup)
     return LOGIN_STATE
 
-def login(update, context):
+def login(update: Update, context: CallbackContext) -> None:
     # do login stuff
-
-    keyboard = [['customer', 'deliverer']]
-    reply_markup = ReplyKeyboardMarkup(keyboard,
+    query = update.callback_query
+    query.answer()
+    keyboard = [[ InlineKeyboardButton("Customer 💁", callback_data='userLocation'), InlineKeyboardButton("Deliverer 🚚", callback_data='showOrder')]]
+    reply_markup = InlineKeyboardMarkup(keyboard,
                                        one_time_keyboard=True,
                                        resize_keyboard=True)
     message = "Are you a customer or a deliverer"
-    chat_id = update.message.chat_id
-    context.bot.send_message(chat_id=chat_id, text=message, reply_markup=reply_markup)
-    return CHOOSE_ROLE_STATE
+    query.edit_message_text(text=message, reply_markup=reply_markup)
+    
+    return CHOOSE_STATE
 
-def chooseRole(update, context):
-    USER_REPLY = update.message.text
-    print(USER_REPLY)
-    keyboard_location = [['location']]
-    reply_markup_location = ReplyKeyboardMarkup(keyboard_location,
-                                               one_time_keyboard=True,
-                                               resize_keyboard=True)
+# def chooseRole(update, context):
+#     USER_REPLY = update.message.text
+#     print(USER_REPLY)
+#     keyboard_location = [['location']]
+#     reply_markup_location = ReplyKeyboardMarkup(keyboard_location,
+#                                                one_time_keyboard=True,
+#                                                resize_keyboard=True)
 
-    keyboard_show_orders = [['showorders']]
-    reply_markup_show_orders = ReplyKeyboardMarkup(keyboard_show_orders,
-                                            one_time_keyboard=True,
-                                            resize_keyboard=True)
-    chat_id = update.message.chat_id
-    if USER_REPLY == "customer":
-        context.bot.send_message(
-            chat_id=chat_id, text="Please input your location", reply_markup=reply_markup_location)
-        return CUSTOMER_USER_LOCATION_STATE
-    elif USER_REPLY == "deliverer":
-        context.bot.send_message(
-            chat_id=chat_id, text="Here are the orders", reply_markup=reply_markup_show_orders)
-        return DELIVERER_SHOW_ORDER_STATE
-    else: 
-        return LOGIN_STATE
+#     keyboard_show_orders = [['showorders']]
+#     reply_markup_show_orders = ReplyKeyboardMarkup(keyboard_show_orders,
+#                                             one_time_keyboard=True,
+#                                             resize_keyboard=True)
+#     chat_id = update.message.chat_id
+#     if USER_REPLY == "customer":
+#         context.bot.send_message(
+#             chat_id=chat_id, text="Please input your location", reply_markup=reply_markup_location)
+#         return CUSTOMER_USER_LOCATION_STATE
+#     elif USER_REPLY == "deliverer":
+#         context.bot.send_message(
+#             chat_id=chat_id, text="Here are the orders", reply_markup=reply_markup_show_orders)
+#         return DELIVERER_SHOW_ORDER_STATE
+#     else: 
+#         return LOGIN_STATE
 
-def userLocation(update, context):
+def userLocation(update: Update, context: CallbackContext) -> None:
     # get user location
-    keyboard = [['finefoods' , 'flavours', 'thedeck']]
-    reply_markup = ReplyKeyboardMarkup(keyboard,
+    query = update.callback_query
+    query.answer()
+
+    # user = update.callback_query.message.from_user
+    # user_location = update.callback_query.message.location
+    # print(user_location)
+
+    chat_id = update.callback_query.message.chat.id
+    message = "Where do you want the food to be delivered to?"
+    context.bot.send_message(chat_id, text=message)
+
+    keyboard = [[ InlineKeyboardButton("Yes", callback_data='chooseCanteen'), InlineKeyboardButton("No", callback_data='userLocation') ]]
+    reply_markup = InlineKeyboardMarkup(keyboard,
+                                       one_time_keyboard=True,
+                                       resize_keyboard=True)
+    message = "Confirm your location is at SOC Programming Lab 4?"
+    context.bot.send_message(chat_id, text=message, reply_markup=reply_markup)
+    return CHOOSE_STATE
+
+def chooseCanteen(update, context):
+    query = update.callback_query
+    query.answer()
+
+    chat_id = update.callback_query.message.chat.id
+    context.bot.send_photo(chat_id, "https://uci.nus.edu.sg/oca/wp-content/uploads/sites/9/2018/05/NUS_Roving_2015-73-Deck-1024x684.jpg")
+    context.bot.send_photo(chat_id, "https://uci.nus.edu.sg/oca/wp-content/uploads/sites/9/2018/05/Flavours-Edited-1024x684.jpg")
+    context.bot.send_photo(chat_id, "https://uci.nus.edu.sg/oca/wp-content/uploads/sites/9/2018/05/Fine-Food-1-1024x684.jpg")
+
+    keyboard = [[ InlineKeyboardButton("Fine Foods 🍔", callback_data='finefoods'), InlineKeyboardButton("Flavours 🍇", callback_data='flavours'), InlineKeyboardButton("The Deck 🚢", callback_data='thedeck')]]
+    reply_markup = InlineKeyboardMarkup(keyboard,
                                        one_time_keyboard=True,
                                        resize_keyboard=True)
     message = "Which food court do you wish to order from"
-    chat_id = update.message.chat_id
-    context.bot.send_message(chat_id=chat_id, text=message, reply_markup=reply_markup)
-    return CUSTOMER_CHOOSE_CANTEEN_STATE
+    context.bot.send_message(chat_id, text=message, reply_markup=reply_markup)
+    return CHOOSE_STATE
 
-def chooseCanteen(update, context):
-    CANTEEN = update.message.text
-    chat_id = update.message.chat_id
-    message = "Choose your food to order"
-    keyboard = [['confirmorder']]
-    reply_markup = ReplyKeyboardMarkup(keyboard,
-                                       one_time_keyboard=True,
-                                       resize_keyboard=True)
-    context.bot.send_message(chat_id=chat_id, text=message, reply_markup=reply_markup)
-    if CANTEEN == 'finefoods':
-        # show menu
-        finefoodsMessage = "finefood menu"
-        context.bot.send_message(chat_id=chat_id, text=finefoodsMessage)
-        return CUSTOMER_CONFIRM_ORDER_STATE
-    elif CANTEEN == 'flavours':
-        # show menu
-        flavoursMessage = "flavours menu"
-        context.bot.send_message(chat_id=chat_id, text=flavoursMessage)
-        return CUSTOMER_CONFIRM_ORDER_STATE
-    elif CANTEEN == 'thedeck':
-        # show menu
-        deckMessage = "deck menu"
-        context.bot.send_message(chat_id=chat_id, text=deckMessage, reply_markup=reply_markup)
-        return CUSTOMER_CONFIRM_ORDER_STATE
+
 
 def confirmOrder(update, context):
     keyboard = [['pushorder', 'goback']]
@@ -192,8 +197,7 @@ def main():
     handler for the interaction with the user.
     """
     # Create the EventHandler and pass it your bot's token.
-    myToken = os.environ.get("TOKEN") 
-    updater = Updater(token=myToken, use_context=True)
+    updater = Updater(token="1519714958:AAEoXv4mFqM2wXkCVNDOnXUh_IH8Sgr6tG4", use_context=True)
 
     # Get the dispatcher to register handlers:
     dp = updater.dispatcher
@@ -203,11 +207,9 @@ def main():
         entry_points=[CommandHandler('start', start)],
 
         states={
-            LOGIN_STATE: [MessageHandler(Filters.regex('login|startmenu'), login)],
+            LOGIN_STATE: [CallbackQueryHandler(login, pattern='login|startmenu')],
 
-            CHOOSE_ROLE_STATE: [MessageHandler(Filters.regex('customer|deliverer'), chooseRole)],
-
-            CUSTOMER_USER_LOCATION_STATE: [MessageHandler(Filters.regex('location'), userLocation)],
+            CHOOSE_STATE: [CallbackQueryHandler(userLocation, pattern='userLocation'), CallbackQueryHandler(showOrder, pattern='showOrder'), CallbackQueryHandler(chooseCanteen, pattern='chooseCanteen'), CallbackQueryHandler(userLocation, pattern='userLocation')],
 
             CUSTOMER_CHOOSE_CANTEEN_STATE: [MessageHandler(Filters.regex('finefoods|flavours|thedeck|goback'), chooseCanteen)],
 
@@ -239,7 +241,5 @@ def main():
     updater.idle()
 
 if __name__ == '__main__':
-    dotenv_path = join(dirname(__file__), '.env')
-    load_dotenv(dotenv_path) 
     print("RUNNING NOW")
     main()
