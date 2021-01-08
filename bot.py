@@ -5,12 +5,17 @@ from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, KeyboardButton
 from time import sleep
 from dotenv import load_dotenv
 
+import pandas as pd
 import logging
 import random
 import os
 
 load_dotenv()
 
+CURR_DIR = os.path.dirname(__file__)
+LOC_DATA_FILE = os.path.join(CURR_DIR, 'NUS_Google_Coordinates.csv')
+
+df = pd.read_csv(LOC_DATA_FILE)
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     level=logging.INFO)
@@ -100,9 +105,18 @@ def locationCallback(update: Update, context: CallbackContext) -> int:
     location = update.effective_message.location
     lat, lng = location.latitude, location.longitude
 
+    sample_df = df[(df['Latitude'] - lat > 0.01) &
+                   (df['Longitude'] - lng > 0.01)]
+    logger.info(sample_df)
+
     chat_id = update.message.chat_id
 
     message = f'Confirm location?'
+
+    if not sample_df.empty:
+        message = message[::-1] + ' ' + sample_df['building'].iloc[0] + ', ' + \
+            sample_df['Description'].iloc[0] + ', ' + \
+            sample_df['Building_full_name'].iloc[0]
 
     keyboard = [[InlineKeyboardButton("Yes", callback_data='chooseCanteen'), InlineKeyboardButton(
         "No", callback_data='userLocation')]]
