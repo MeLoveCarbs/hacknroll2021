@@ -123,11 +123,11 @@ def chooseCanteen(update, context):
 def finefoods(update, context):
     query = update.callback_query
     query.answer()
-    keyboard = [[ 
-        InlineKeyboardButton("Gong Cha Pearl Milk Tea $3.50", callback_data='confirmOrder3.50'),
-        InlineKeyboardButton("Shanghai Xiao Long Bao $4.50", callback_data='confirmOrder4.50'), 
-        InlineKeyboardButton("Korean BBQ Beef Set $5.00", callback_data='confirmOrder5.00'), 
-    ]]
+    keyboard = [
+        [InlineKeyboardButton("Gong Cha Pearl Milk Tea $3.50", callback_data='confirmOrder3.50', resize_keyboard=True)] ,
+        [InlineKeyboardButton("Shanghai Xiao Long Bao $4.50", callback_data='confirmOrder4.50', resize_keyboard=True)],
+        [InlineKeyboardButton("Korean BBQ Beef Set $5.00", callback_data='confirmOrder5.00', resize_keyboard=True)]
+    ]
     reply_markup = InlineKeyboardMarkup(keyboard,
                                        one_time_keyboard=True,
                                        resize_keyboard=True)
@@ -138,11 +138,11 @@ def finefoods(update, context):
 def flavours(update, context):
     query = update.callback_query
     query.answer()
-    keyboard = [[ 
-        InlineKeyboardButton("Roti John $4.50", callback_data='confirmOrder4.50'),
-        InlineKeyboardButton("Taiwanese Chicken Chop Rice $5.00", callback_data='confirmOrder5.00'), 
-        InlineKeyboardButton("Mala Hotpot $6.50", callback_data='confirmOrder6.50'), 
-    ]]
+    keyboard = [
+        [InlineKeyboardButton("Roti John $4.50", callback_data='confirmOrder4.50')],
+        [InlineKeyboardButton("Taiwanese Chicken Chop Rice $5.00", callback_data='confirmOrder5.00')], 
+        [InlineKeyboardButton("Mala Hotpot $6.50", callback_data='confirmOrder6.50')], 
+    ]
     reply_markup = InlineKeyboardMarkup(keyboard,
                                        one_time_keyboard=True,
                                        resize_keyboard=True)
@@ -153,11 +153,11 @@ def flavours(update, context):
 def thedeck(update, context):
     query = update.callback_query
     query.answer()
-    keyboard = [[ 
-        InlineKeyboardButton("Chicken Rice $3.00", callback_data='confirmOrder3.00'),
-        InlineKeyboardButton("Yong Tau Foo $3.00", callback_data='confirmOrder3.00'), 
-        InlineKeyboardButton("Japanese Chicken Cutlet Set $4.00", callback_data='confirmOrder4.00'), 
-    ]]
+    keyboard = [
+        [InlineKeyboardButton("Chicken Rice $3.00", callback_data='confirmOrder3.00')],
+        [InlineKeyboardButton("Yong Tau Foo $3.00", callback_data='confirmOrder3.00')], 
+        [InlineKeyboardButton("Japanese Chicken Cutlet Set $4.00", callback_data='confirmOrder4.00')], 
+    ]
     reply_markup = InlineKeyboardMarkup(keyboard,
                                        one_time_keyboard=True,
                                        resize_keyboard=True)
