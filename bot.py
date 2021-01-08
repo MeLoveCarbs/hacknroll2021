@@ -4,6 +4,7 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove
 
 import logging
+import random
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     level=logging.INFO)
@@ -122,7 +123,10 @@ def chooseCanteen(update, context):
 def finefoods(update, context):
     query = update.callback_query
     query.answer()
-    keyboard = [[ InlineKeyboardButton("A $1.50", callback_data='confirmOrder'), InlineKeyboardButton("B", callback_data='confirmOrder') ]]
+    # @Jun Hao populate this keyboard with nice emojis and real food/pricing
+    keyboard = [[ InlineKeyboardButton("A $1.50", callback_data='confirmOrder1.50'), \
+                    InlineKeyboardButton("B $2.00", callback_data='confirmOrder2.00'), \
+                    InlineKeyboardButton("C $3.00", callback_data='confirmOrder3.00')]]
     reply_markup = InlineKeyboardMarkup(keyboard,
                                        one_time_keyboard=True,
                                        resize_keyboard=True)
@@ -133,14 +137,17 @@ def finefoods(update, context):
 def confirmOrder(update, context):
     query = update.callback_query
     query.answer()
+    foodCost = float(query.data[12:])
+    deliveryCost = random.uniform(0.5, 1.9)
+    totalCost = foodCost + deliveryCost
     print("meow")
-    print(query.message.text)
+    print(query.data)
 
     keyboard = [[ InlineKeyboardButton("Yes", callback_data='pushOrder'), InlineKeyboardButton("No", callback_data='chooseCanteen') ]]
     reply_markup = InlineKeyboardMarkup(keyboard,
                                        one_time_keyboard=True,
                                        resize_keyboard=True)
-    message = "Are you sure?"
+    message = "Food cost: $" + str(foodCost) + "\nDelivery cost: $" + str(deliveryCost) + "\nTotal cost: $" + str(totalCost) + "\nConfirm order?"
     query.edit_message_text(text=message, reply_markup=reply_markup)
     return CHOOSE_STATE
 
