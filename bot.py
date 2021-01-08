@@ -95,22 +95,51 @@ def login(update: Update, context: CallbackContext) -> None:
 #         return LOGIN_STATE
 
 
-def userLocation(update: Update, context: CallbackContext) -> None:
+def userLocation(update: Update, context: CallbackContext) -> int:
+    '''
+    Use regular keyboard to send current location information.
+    '''
     query = update.callback_query
     query.answer()
 
     chat_id = update.callback_query.message.chat.id
-    message = "Where do you want the food to be delivered to?"
-    logger.info(query.from_user)
-    logger.info(dir(query))
+    message = "Agree to send your current location to deliver your order?"
+
+    keyboard = [[KeyboardButton("Yes", request_location=True, request_contact=False), KeyboardButton(
+        "No")]]
+
+    reply_markup = ReplyKeyboardMarkup(keyboard,
+                                       one_time_keyboard=True,
+                                       resize_keyboard=True)
+
+    msg = context.bot.send_message(
+        chat_id, text=message, reply_markup=reply_markup)
+
+    return CHOOSE_STATE
+
+
+def locationCallback(update: Update, context: CallbackContext) -> int:
+    '''
+    Separate callback function for noting down ALL location information.
+    Probably be a bug, since it circumvents the login flow.
+    '''
+    logger.info('Location at: %s', update.effective_message.location)
+    location = update.effective_message.location
+    lat, lng = location.latitude, location.longitude
+
+    chat_id = update.message.chat_id
+
+    message = f'Confirm location?'
 
     keyboard = [[InlineKeyboardButton("Yes", callback_data='chooseCanteen'), InlineKeyboardButton(
         "No", callback_data='userLocation')]]
+
     reply_markup = InlineKeyboardMarkup(keyboard,
                                         one_time_keyboard=True,
                                         resize_keyboard=True)
 
-    context.bot.send_message(chat_id, text=message, reply_markup=reply_markup)
+    context.bot.send_message(
+        chat_id, text=message, reply_markup=reply_markup)
 
     return CHOOSE_STATE
 
@@ -134,6 +163,7 @@ def chooseCanteen(update, context):
                                         resize_keyboard=True)
     message = "Which food court do you wish to order from"
     context.bot.send_message(chat_id, text=message, reply_markup=reply_markup)
+
     return CHOOSE_STATE
 
 
@@ -280,10 +310,14 @@ def main(dev_token=False):
         },
 
         fallbacks=[CommandHandler('Cancel', cancel)],
-        per_user=False
+        per_user=False,
+        allow_reentry=True
     )
 
     dp.add_handler(conv_handler)
+
+    # Location Callback
+    dp.add_handler(MessageHandler(Filters.location, locationCallback))
 
     # Log all errors:
     dp.add_error_handler(error)
