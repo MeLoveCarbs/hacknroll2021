@@ -12,7 +12,7 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 logger = logging.getLogger(__name__)
 
 class OrderDetails:
-    def __init__(self, orderTime, foodQuantity, foodPrice, restaurant, deliveryFee, orderId, deliveryLocation):
+    def __init__(self, orderTime=None, foodQuantity=None, foodPrice=None, restaurant=None, deliveryFee=None, orderId=None, deliveryLocation=None):
         self.orderTime = orderTime
         self.foodQuantity = foodQuantity
         self.foodPrice = foodPrice
@@ -171,8 +171,6 @@ def confirmOrder(update, context):
     foodCost = float(query.data[12:])
     deliveryCost = random.uniform(0.5, 1.9)
     totalCost = foodCost + deliveryCost
-    print("meow")
-    print(query.data)
 
     keyboard = [[ InlineKeyboardButton("Yes", callback_data='pushOrder'), InlineKeyboardButton("No", callback_data='chooseCanteen') ]]
     reply_markup = InlineKeyboardMarkup(keyboard,
@@ -183,24 +181,35 @@ def confirmOrder(update, context):
     return CHOOSE_STATE
 
 def pushOrder(update, context):
-    MESSAGE = update.message.text
-    keyboard_startmenu = [['startmenu']]
-    reply_markup_startmenu = ReplyKeyboardMarkup(keyboard_startmenu,
+    query = update.callback_query
+    query.answer()
+
+    #check if order exist
+    #if doesn't exist, create order & push
+    #else check if order is complete
+    orderIsComplete = False
+    if random.uniform(0.5, 1.9) > 1.3:
+        orderIsComplete = True
+
+    message = "The restaurant has been notified of your order. Please wait "
+    if orderIsComplete:
+        chat_id = query.message.chat.id
+        keyboard = [[ InlineKeyboardButton("Yes", callback_data='userLocation'), InlineKeyboardButton("No", callback_data='bye') ]]
+        reply_markup = InlineKeyboardMarkup(keyboard,
                                        one_time_keyboard=True,
                                        resize_keyboard=True)
-    keyboard_foodmenu = [['confirmorder']]
-    reply_markup_foodmenu = ReplyKeyboardMarkup(keyboard_foodmenu,
+        message = "Thank you! ❤️ Do you want to order again?"
+        context.bot.send_message(chat_id, text=message, reply_markup=reply_markup)
+    else:
+        if random.uniform(0.0, 1.0) > 0.5:
+            message += "🙏🙏"
+        keyboard = [[ InlineKeyboardButton("Refresh", callback_data='pushOrder')]]
+        reply_markup = InlineKeyboardMarkup(keyboard,
                                        one_time_keyboard=True,
                                        resize_keyboard=True)
-    if MESSAGE == "pushorder":
-        message = "Order pushed, please wait"
-        update.message.reply_text(message, reply_markup=reply_markup_startmenu) 
-        # wait for delivery here
-        return LOGIN_STATE
-    elif MESSAGE == "goback":
-        message = "Choose your food to order"
-        update.message.reply_text(message, reply_markup=reply_markup_foodmenu) 
-        return CUSTOMER_CONFIRM_ORDER_STATE
+        query.edit_message_text(text=message, reply_markup=reply_markup)
+    return CHOOSE_STATE
+    
 
 def showOrder(update, context):
     keyboard = [['confirm']]
@@ -241,6 +250,13 @@ def cancel(update, context):
     update.message.reply_text('Bye! /start to begin again',
                               reply_markup=ReplyKeyboardRemove())
 
+def bye(update, context):
+    query = update.callback_query
+    query.answer()
+    chat_id = query.message.chat.id
+    context.bot.send_message(chat_id, text="Hope to see you again soon! 😃")
+    return LOGIN_STATE
+
 def main():
     """
     Main function.
@@ -261,7 +277,7 @@ def main():
         states={
             LOGIN_STATE: [CallbackQueryHandler(login, pattern='login|startmenu')],
 
-            CHOOSE_STATE: [CallbackQueryHandler(userLocation, pattern='userLocation'), CallbackQueryHandler(showOrder, pattern='showOrder'), CallbackQueryHandler(chooseCanteen, pattern='chooseCanteen'), CallbackQueryHandler(userLocation, pattern='userLocation'), CallbackQueryHandler(finefoods, pattern='finefoods'), CallbackQueryHandler(confirmOrder, pattern='confirmOrder')],
+            CHOOSE_STATE: [CallbackQueryHandler(userLocation, pattern='userLocation'), CallbackQueryHandler(showOrder, pattern='showOrder'), CallbackQueryHandler(chooseCanteen, pattern='chooseCanteen'), CallbackQueryHandler(userLocation, pattern='userLocation'), CallbackQueryHandler(finefoods, pattern='finefoods'), CallbackQueryHandler(confirmOrder, pattern='confirmOrder'), CallbackQueryHandler(pushOrder, pattern='pushOrder'), CallbackQueryHandler(bye, pattern='bye')],
 
             CUSTOMER_CHOOSE_CANTEEN_STATE: [MessageHandler(Filters.regex('finefoods|flavours|thedeck|goback'), chooseCanteen)],
 
