@@ -1,17 +1,24 @@
+from telegram.ext.dispatcher import run_async
+from decimal import Decimal
+import threading
+import datetime
+from time import sleep
 from telegram.ext import Updater, CommandHandler, MessageHandler, RegexHandler
 from telegram.ext import ConversationHandler, CallbackQueryHandler, Filters, CallbackContext
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
-from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove
-import os
-from os.path import join, dirname
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, Location
+from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, KeyboardButton
 from dotenv import load_dotenv
+
+import pandas as pd
 import logging
 import random
-from time import sleep
-import datetime
-import threading
-from decimal import Decimal
-from telegram.ext.dispatcher import run_async
+import os
+
+
+CURR_DIR = os.path.dirname(__file__)
+LOC_DATA_FILE = os.path.join(CURR_DIR, 'public', 'NUS_Google_Coordinates.csv')
+load_dotenv(os.path.join(CURR_DIR, '.env'))
+df = pd.read_csv(LOC_DATA_FILE)
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     level=logging.INFO)
@@ -82,16 +89,52 @@ def userLocation(update: Update, context: CallbackContext) -> None:
     # print(user_location)
 
     chat_id = update.callback_query.message.chat.id
-    message = "Where do you want the food to be delivered to?"
-    context.bot.send_message(chat_id, text=message)
+    message = "Agree to send your current location to deliver your order?"
+
+    keyboard = [[KeyboardButton("Yes", request_location=True, request_contact=False), KeyboardButton(
+        "No")]]
+
+    reply_markup = ReplyKeyboardMarkup(keyboard,
+                                       one_time_keyboard=True,
+                                       resize_keyboard=True)
+
+    context.bot.send_message(
+        chat_id, text=message, reply_markup=reply_markup)
+    return CUSTOMER_STATE
+
+
+def locationCallback(update: Update, context: CallbackContext) -> int:
+    '''
+    Separate callback function for noting down ALL location information.
+    Probably be a bug, since it circumvents the login flow.
+    '''
+    logger.info('Location at: %s', update.effective_message.location)
+    location = update.effective_message.location
+    lat, lng = location.latitude, location.longitude
+
+    sample_df = df[(df['Latitude'] - lat > 0.01) &
+                   (df['Longitude'] - lng > 0.01)]
+    logger.info(sample_df)
+
+    chat_id = update.message.chat_id
+
+    message = f'Confirm location?'
+
+    if not sample_df.empty:
+        message = message[::-1] + ' ' + sample_df['building'].iloc[0] + ', ' + \
+            sample_df['Description'].iloc[0] + ', ' + \
+            sample_df['Building_full_name'].iloc[0]
 
     keyboard = [[InlineKeyboardButton("Yes", callback_data='chooseCanteen'), InlineKeyboardButton(
         "No", callback_data='userLocation')]]
+
     reply_markup = InlineKeyboardMarkup(keyboard,
                                         one_time_keyboard=True,
                                         resize_keyboard=True)
-    message = "Confirm your location is at SOC Programming Lab 4?"
-    context.bot.send_message(chat_id, text=message, reply_markup=reply_markup)
+
+    context.bot.send_message(
+        chat_id, text=message, reply_markup=reply_markup)
+
     return CUSTOMER_STATE
 
 
@@ -195,8 +238,8 @@ def confirmOrder(update, context):
     reply_markup = InlineKeyboardMarkup(keyboard,
                                         one_time_keyboard=True,
                                         resize_keyboard=True)
-    message = "Restaurant: " + restaurant + "\nFood cost: $" + str(foodCost) + "\nDelivery cost: $" + str(
-        deliveryCost) + "\nTotal cost: $" + str(totalCost) + "\nConfirm order?"
+    message = "Food cost: $" + str(round(foodCost, 2)) + "\nDelivery cost: $" + str(
+        round(deliveryCost, 2)) + "\nTotal cost: $" + str(round(totalCost, 2)) + "\nConfirm order?"
     query.edit_message_text(text=message, reply_markup=reply_markup)
     return CUSTOMER_STATE
 
@@ -329,18 +372,16 @@ def error(update, context):
 
 def cancel(update, context):
     user = update.message.from_user
+    chat_id = update.message.chat_id
     logger.info("User %s canceled the conversation.", user.first_name)
-    query = update.callback_query
-    query.answer()
-    query.edit_message_text(text="See you next time!")
+    context.bot.send_message(chat_id=chat_id, text="See you next time!")
     return ConversationHandler.END
 
 
 def bye(update, context):
-    query = update.callback_query
-    query.answer()
-    chat_id = query.message.chat.id
-    context.bot.send_message(chat_id, text="Hope to see you again soon! 😃")
+    chat_id = update.message.chat_id
+    context.bot.send_message(
+        chat_id, text="See you again soon! Type /start to order again 😃")
     return LOGIN_STATE
 
 
@@ -351,11 +392,9 @@ def main():
     states on each step of the flow. Each state has its own
     handler for the interaction with the user.
     """
-    dotenv_path = join(dirname(__file__), '.env')
-    load_dotenv(dotenv_path)
-    myToken = os.environ.get('TOKEN')
-    updater = Updater(
-        token=myToken, use_context=True)
+    # Create the EventHandler and pass it your bot's token.
+    token = os.getenv('MAIN_TOKEN')
+    updater = Updater(token=token, use_context=True)
 
     # Get the dispatcher to register handlers:
     dp = updater.dispatcher
@@ -384,11 +423,15 @@ def main():
             ]
         },
 
-        fallbacks=[CommandHandler('Cancel', cancel)],
-        per_user=False
+        fallbacks=[CommandHandler('Cancel', bye)],
+        per_user=False,
+        allow_reentry=True
     )
 
     dp.add_handler(conv_handler)
+
+    # Location Callback
+    dp.add_handler(MessageHandler(Filters.location, locationCallback))
 
     # Log all errors:
     dp.add_error_handler(error)
