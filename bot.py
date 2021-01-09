@@ -11,6 +11,7 @@ from time import sleep
 import datetime
 import threading
 from decimal import Decimal
+from telegram.ext.dispatcher import run_async
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     level=logging.INFO)
@@ -39,6 +40,7 @@ GLOBAL_ORDERS = {}
 LOGIN_STATE, CUSTOMER_STATE, DELIVERER_STATE = range(3)
 
 
+@run_async
 def start(update: Update, context: CallbackContext) -> None:
     username = update.message.chat.username
     startMessage = "Hi, " + str(username) + ". Welcome to nusmakan_bot"
@@ -56,6 +58,7 @@ def start(update: Update, context: CallbackContext) -> None:
     return LOGIN_STATE
 
 
+@run_async
 def login(update: Update, context: CallbackContext) -> None:
     query = update.callback_query
     query.answer()
@@ -70,6 +73,7 @@ def login(update: Update, context: CallbackContext) -> None:
     return CUSTOMER_STATE
 
 
+@run_async
 def userLocation(update: Update, context: CallbackContext) -> None:
     query = update.callback_query
     query.answer()
@@ -91,6 +95,7 @@ def userLocation(update: Update, context: CallbackContext) -> None:
     return CUSTOMER_STATE
 
 
+@run_async
 def chooseCanteen(update, context):
     query = update.callback_query
     query.answer()
@@ -113,6 +118,7 @@ def chooseCanteen(update, context):
     return CUSTOMER_STATE
 
 
+@run_async
 def finefoods(update, context):
     query = update.callback_query
     query.answer()
@@ -133,6 +139,7 @@ def finefoods(update, context):
     return CUSTOMER_STATE
 
 
+@run_async
 def flavours(update, context):
     query = update.callback_query
     query.answer()
@@ -153,6 +160,7 @@ def flavours(update, context):
     return CUSTOMER_STATE
 
 
+@run_async
 def thedeck(update, context):
     query = update.callback_query
     query.answer()
@@ -172,6 +180,7 @@ def thedeck(update, context):
     return CUSTOMER_STATE
 
 
+@run_async
 def confirmOrder(update, context):
     query = update.callback_query
     query.answer()
@@ -204,6 +213,7 @@ def next_id():
     return result
 
 
+@run_async
 def pushOrder(update, context):
     query = update.callback_query
     query.answer()
@@ -230,11 +240,11 @@ def pushOrder(update, context):
     query.edit_message_text(text=message)
     print(GLOBAL_ORDERS[orderId])
     while GLOBAL_ORDERS[orderId]['isPickup'] == False:
-        sleep(5)
+        sleep(2)
     message = "Your order has been picked up by a deliverer!"
     query.edit_message_text(text=message)
     while GLOBAL_ORDERS[orderId]['isComplete'] == False:
-        sleep(5)
+        sleep(2)
     message = "Your order has been delivered!"
     keyboard = [[InlineKeyboardButton("Start Menu", callback_data='login')]]
     reply_markup = InlineKeyboardMarkup(keyboard,
@@ -244,28 +254,33 @@ def pushOrder(update, context):
     return LOGIN_STATE
 
 
+@run_async
 def showOrder(update, context):
     query = update.callback_query
     query.answer()
     buttons = []
-
+    index = 1
+    message = "These are the orders waiting to be picked up: \n"
     for key in GLOBAL_ORDERS:
         if GLOBAL_ORDERS[key]['isPickup'] == False:
-            text = "Order " + \
-                str(GLOBAL_ORDERS[key].restaurant) + " price" + \
-                str(GLOBAL_ORDERS[key].foodQuantity)
+            text = "Order: \nRestaurant: " + \
+                str(GLOBAL_ORDERS[key]['restaurant']) + ". Food Price: " + \
+                str(GLOBAL_ORDERS[key]['foodPrice']) + ". Delivery Fees: " + str(
+                    GLOBAL_ORDERS[key]['deliveryFee']) + ". Food items: [Gong Cha Pearl Milk Tea]\n"
             buttons.append(InlineKeyboardButton(
-                text, callback_data='completeOrder' + str(key)))
+                str(index), callback_data='completeOrder' + str(key)))
+            index += 1
+            message += text
     keyboard = [buttons]
     reply_markup = InlineKeyboardMarkup(keyboard,
                                         one_time_keyboard=True,
                                         resize_keyboard=True)
     # text box with selection
-    message = "These are the orders waiting to be picked up: \n"
     query.edit_message_text(text=message, reply_markup=reply_markup)
     return DELIVERER_STATE
 
 
+@run_async
 def completeOrder(update, context):
     query = update.callback_query
     query.answer()
@@ -283,6 +298,7 @@ def completeOrder(update, context):
     return DELIVERER_STATE
 
 
+@run_async
 def deliveredOrder(update, context):
     query = update.callback_query
     query.answer()
